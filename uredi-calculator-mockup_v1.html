@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UReDI Calculator — Dataset Rescue Scoring (Mock-up v0.1)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4f2ec;
+    --card:#fcfbf7;
+    --ink:#1c2a2c;
+    --ink-soft:#4a5a5c;
+    --ink-faint:#8a9698;
+    --line:#dcd8cc;
+    --line-soft:#e8e4d9;
+    --primary:#0d5c63;
+    --primary-dk:#08474d;
+    --accent:#c2622b;
+    --u:#b0392c;       /* Urgency */
+    --rd:#1f7079;      /* Recoverability Difficulty */
+    --imp:#3a5a8c;     /* Importance */
+    --tier-crit:#a32d1f;
+    --tier-high:#c2622b;
+    --tier-mod:#b08a24;
+    --tier-low:#4a7c59;
+    --shadow:0 1px 2px rgba(28,42,44,.06),0 8px 24px rgba(28,42,44,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans',sans-serif;
+    font-size:15px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:radial-gradient(rgba(28,42,44,.025) 1px,transparent 1px);
+    background-size:22px 22px;
+  }
+  a{color:var(--primary);text-decoration:none;border-bottom:1px solid rgba(13,92,99,.35)}
+  a:hover{color:var(--accent);border-color:var(--accent)}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 26px;position:relative;z-index:1}
+
+  /* ---------- HEADER ---------- */
+  header{
+    background:linear-gradient(160deg,#0d5c63,#08474d 70%);
+    color:#f4f2ec;padding:38px 0 34px;border-bottom:3px solid var(--accent);
+  }
+  .badge{
+    display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:11px;
+    letter-spacing:.16em;text-transform:uppercase;color:#9fd3d6;
+    border:1px solid rgba(159,211,214,.4);padding:3px 9px;border-radius:3px;margin-bottom:14px;
+  }
+  header h1{
+    font-family:'Spectral',serif;font-weight:600;font-size:39px;line-height:1.12;
+    letter-spacing:-.01em;
+  }
+  header h1 .ast{color:var(--accent)}
+  header .sub{
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#a9cdcf;
+    margin-top:8px;letter-spacing:.04em;
+  }
+  .intro{
+    margin-top:22px;max-width:760px;font-size:14.5px;line-height:1.72;color:#dfe9e7;
+  }
+  .intro p{margin-bottom:11px}
+  .intro .pivot{
+    font-weight:600;color:#fff;font-family:'Spectral',serif;font-size:16px;
+    border-left:3px solid var(--accent);padding-left:14px;margin:14px 0;
+  }
+  .intro a{color:#9fd3d6;border-color:rgba(159,211,214,.5)}
+  .intro a:hover{color:#fff;border-color:#fff}
+
+  .mock-note{
+    background:#2a1b10;color:#f0d9c4;font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;letter-spacing:.03em;text-align:center;padding:7px 0;
+    border-bottom:1px solid #4a3220;
+  }
+
+  /* ---------- LAYOUT ---------- */
+  .grid{display:grid;grid-template-columns:1fr 326px;gap:30px;padding:34px 0 70px;align-items:start}
+  @media(max-width:920px){.grid{grid-template-columns:1fr}}
+
+  /* ---------- CARDS / SECTIONS ---------- */
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:8px;
+    box-shadow:var(--shadow);margin-bottom:22px;overflow:hidden;
+  }
+  .sec-head{
+    display:flex;align-items:center;gap:12px;padding:16px 22px;cursor:pointer;
+    border-bottom:1px solid var(--line-soft);user-select:none;
+  }
+  .sec-head .tag{
+    font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;
+    width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+    border-radius:5px;color:#fff;flex:none;
+  }
+  .sec-head h2{
+    font-family:'Spectral',serif;font-weight:600;font-size:20px;flex:1;letter-spacing:-.01em;
+  }
+  .sec-head .meta{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-faint)}
+  .sec-head .chev{transition:transform .2s;color:var(--ink-faint);font-size:13px}
+  .card.closed .sec-head .chev{transform:rotate(-90deg)}
+  .card.closed .sec-body{display:none}
+  .sec-body{padding:6px 22px 22px}
+  .sec-intro{font-size:13.5px;color:var(--ink-soft);margin:14px 0 4px;line-height:1.65}
+
+  .tag.t-meta{background:var(--ink-soft)}
+  .tag.t-u{background:var(--u)}
+  .tag.t-rd{background:var(--rd)}
+  .tag.t-imp{background:var(--imp)}
+  .tag.t-ex{background:var(--accent)}
+
+  /* ---------- METADATA FIELDS ---------- */
+  .field-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin-top:16px}
+  .field.full{grid-column:1 / -1}
+  @media(max-width:560px){.field-grid{grid-template-columns:1fr}}
+  label.flab{
+    display:block;font-size:12px;font-weight:600;letter-spacing:.02em;
+    text-transform:uppercase;color:var(--ink-soft);margin-bottom:5px;
+  }
+  label.flab .opt{
+    font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink-faint);
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;
+  }
+  input[type=text],input[type=email],textarea,select{
+    width:100%;font-family:'IBM Plex Sans',sans-serif;font-size:14px;color:var(--ink);
+    background:#fff;border:1px solid var(--line);border-radius:5px;padding:9px 11px;
+  }
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(13,92,99,.12)}
+  .hint{font-size:11.5px;color:var(--ink-faint);margin-top:4px;font-style:italic}
+  .recommend-strip{
+    background:rgba(13,92,99,.06);border:1px dashed rgba(13,92,99,.3);
+    border-radius:6px;padding:9px 13px;font-size:12.5px;color:var(--primary-dk);margin-top:4px;
+  }
+
+  /* slider */
+  .exp-row{display:flex;align-items:center;gap:14px;margin-top:6px}
+  input[type=range]{flex:1;accent-color:var(--primary)}
+  .exp-val{
+    font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;
+    background:var(--primary);color:#fff;border-radius:5px;padding:3px 10px;min-width:54px;text-align:center;
+  }
+
+  /* ---------- COMPONENT QUESTION BLOCK ---------- */
+  .qblock{border-top:1px solid var(--line-soft);padding:20px 0}
+  .qblock:first-of-type{border-top:none}
+  .q-head{display:flex;align-items:baseline;gap:9px;margin-bottom:3px}
+  .q-code{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;
+    color:#fff;padding:2px 7px;border-radius:3px;letter-spacing:.04em;flex:none;
+  }
+  .q-name{font-family:'Spectral',serif;font-weight:600;font-size:15.5px}
+  .q-text{font-size:14.5px;color:var(--ink);margin:7px 0 3px;font-weight:500}
+  .q-def{font-size:12.5px;color:var(--ink-soft);font-style:italic;margin-bottom:11px;line-height:1.55}
+
+  .callout{
+    background:#fbf4e6;border:1px solid #e8d4a8;border-left:3px solid var(--tier-mod);
+    border-radius:5px;padding:10px 13px;font-size:12.5px;color:#6a521c;margin:10px 0;line-height:1.6;
+  }
+  .callout strong{color:#4a3a10}
+
+  .opts{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .opt-row{
+    display:flex;align-items:flex-start;gap:10px;padding:9px 12px;
+    border:1px solid var(--line);border-radius:6px;cursor:pointer;background:#fff;
+    transition:border-color .12s,background .12s;
+  }
+  .opt-row:hover{border-color:var(--primary)}
+  .opt-row.sel{border-color:var(--primary);background:rgba(13,92,99,.07);box-shadow:inset 0 0 0 1px var(--primary)}
+  .opt-row input{margin-top:3px;accent-color:var(--primary);flex:none}
+  .opt-score{
+    font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;
+    width:20px;flex:none;color:var(--ink-faint);text-align:center;
+  }
+  .opt-row.sel .opt-score{color:var(--primary)}
+  .opt-text{font-size:13px;line-height:1.5}
+
+  .q-foot{display:flex;gap:14px;margin-top:11px;flex-wrap:wrap;align-items:flex-start}
+  .reason{flex:1;min-width:220px}
+  .reason label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-faint);display:block;margin-bottom:4px}
+  .reason textarea{min-height:46px;resize:vertical;font-size:13px}
+  .refs{font-size:11.5px;color:var(--ink-faint);flex:none;max-width:230px}
+  .refs .rl{display:block;margin-top:3px}
+  .refs .ph{font-style:italic}
+
+  /* RD formula box */
+  .formula{
+    background:#0f2f33;color:#cfe6e8;font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;border-radius:6px;padding:13px 16px;margin-top:18px;line-height:1.9;
+  }
+  .formula b{color:#7fc3c8}
+  .formula .lab{color:#8aa6a8}
+
+  /* worked examples */
+  .ex-controls{display:flex;gap:12px;align-items:center;margin-top:14px;flex-wrap:wrap}
+  .ex-controls select{max-width:340px}
+  #exPanel{margin-top:16px}
+  .ex-meta{font-size:13px;color:var(--ink-soft);margin-bottom:12px;line-height:1.6}
+  .ex-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:12px}
+  .ex-table th,.ex-table td{border:1px solid var(--line);padding:5px 8px;text-align:left}
+  .ex-table th{background:rgba(13,92,99,.07);font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:11px}
+  .ex-table td.s{font-family:'IBM Plex Mono',monospace;font-weight:600;text-align:center;width:48px}
+  .ex-triplet{
+    font-family:'IBM Plex Mono',monospace;font-size:13px;background:#0f2f33;color:#cfe6e8;
+    border-radius:5px;padding:8px 12px;display:inline-block;
+  }
+  .ex-cite{font-size:11.5px;color:var(--ink-faint);font-style:italic;margin-top:8px}
+
+  /* ---------- RESULTS ASIDE ---------- */
+  aside{position:sticky;top:18px}
+  .result-card{
+    background:linear-gradient(165deg,#0f3a3f,#0a2c30);color:#e7f1f0;
+    border-radius:9px;box-shadow:var(--shadow);overflow:hidden;
+  }
+  .rc-head{padding:15px 18px 4px;font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#7fb6ba}
+  .priority-box{text-align:center;padding:8px 18px 14px}
+  .priority-num{font-family:'Spectral',serif;font-weight:700;font-size:62px;line-height:1;letter-spacing:-.02em}
+  .priority-den{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#7fb6ba}
+  .tier-pill{
+    display:inline-block;margin-top:9px;font-family:'IBM Plex Mono',monospace;
+    font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    padding:5px 14px;border-radius:20px;color:#fff;
+  }
+  .triplet-row{display:flex;border-top:1px solid rgba(255,255,255,.13)}
+  .trip{flex:1;text-align:center;padding:13px 6px;border-right:1px solid rgba(255,255,255,.13)}
+  .trip:last-child{border-right:none}
+  .trip .tl{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;color:#7fb6ba;text-transform:uppercase}
+  .trip .tv{font-family:'Spectral',serif;font-weight:700;font-size:30px;line-height:1.1;margin-top:2px}
+  .trip.d-u .tv{color:#ff9b8e}
+  .trip.d-rd .tv{color:#7fd3da}
+  .trip.d-imp .tv{color:#9db8e0}
+  .rawprod{
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#7fb6ba;
+    text-align:center;padding:9px 12px;border-top:1px solid rgba(255,255,255,.13);
+  }
+  .rawprod b{color:#e7f1f0}
+  .drag-note{
+    font-size:11.5px;color:#f0c9a0;background:rgba(194,98,43,.18);
+    padding:9px 14px;line-height:1.55;border-top:1px solid rgba(255,255,255,.13);
+  }
+  .completion{
+    padding:11px 14px;border-top:1px solid rgba(255,255,255,.13);
+    font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7fb6ba;
+  }
+  .cbar{height:5px;background:rgba(255,255,255,.14);border-radius:3px;margin-top:5px;overflow:hidden}
+  .cbar i{display:block;height:100%;background:var(--accent);width:0;transition:width .25s}
+
+  .breakdown{
+    background:var(--card);border:1px solid var(--line);border-radius:9px;
+    margin-top:18px;box-shadow:var(--shadow);
+  }
+  .bd-head{
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-faint);padding:13px 16px 8px;
+  }
+  .bd-row{display:flex;justify-content:space-between;padding:5px 16px;font-size:12.5px}
+  .bd-row .bn{color:var(--ink-soft)}
+  .bd-row .bv{font-family:'IBM Plex Mono',monospace;font-weight:600}
+  .bd-row.dim{border-top:1px solid var(--line-soft);font-weight:600;color:var(--ink)}
+  .bd-row.dim:first-of-type{border-top:none}
+  .bd-pad{padding-bottom:12px}
+
+  .export-card{
+    background:var(--card);border:1px solid var(--line);border-radius:9px;
+    margin-top:18px;padding:14px 16px;box-shadow:var(--shadow);
+  }
+  .export-card .et{
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px;
+  }
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
+    font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;
+    border:1px solid var(--line);border-radius:6px;padding:9px;background:#fff;
+    color:var(--ink);cursor:pointer;margin-bottom:8px;
+  }
+  .btn:hover{border-color:var(--primary);color:var(--primary)}
+  .btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .btn.primary:hover{background:var(--primary-dk);color:#fff}
+  .btn:last-child{margin-bottom:0}
+
+  footer{
+    border-top:1px solid var(--line);padding:24px 0 40px;font-size:12px;
+    color:var(--ink-faint);text-align:center;font-family:'IBM Plex Mono',monospace;
+  }
+  footer a{color:var(--ink-faint)}
+
+  /* ---------- PRINT ---------- */
+  @media print{
+    body{background:#fff}
+    body::before,.mock-note,.chev,.export-card,header .intro{display:none}
+    header{background:#0d5c63 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .grid{display:block;padding:14px 0}
+    aside{position:static;margin-top:18px}
+    .card.closed .sec-body{display:block !important}
+    .card,.qblock,.result-card,.breakdown{break-inside:avoid}
+    .card{box-shadow:none}
+    .result-card{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+</head>
+<body>
+
+<div class="mock-note">▲ FUNCTIONAL BUILD v0.2 — all sections collapsed on load · live scoring · JSON export, clipboard copy &amp; print all wired · for road testing</div>
+
+<header>
+  <div class="wrap">
+    <span class="badge">UReDI v3 · Dataset Rescue Scoring</span>
+    <h1>UReDI Calculator</h1>
+    <div class="sub">Urgency · Recoverability Difficulty · Importance &nbsp;|&nbsp; a structured priority instrument for non-expert operators</div>
+    <div class="intro">
+      <p>Tom Karl's framework evolved from his December 2025 scoring document (1.0), which summed Urgency, Recoverability Difficulty, and a ten-part Importance score additively, to UReDI (2.0), which kept the Importance backbone but introduced a multiplicative Priority roll-up and added structural uniqueness (Rs).</p>
+      <p class="pivot">UReDI attempts to quantify how much a dataset is worth and how hard it would be to recover.</p>
+      <p>Paired with <a href="https://sdiggs.github.io/rstar-calculator/" target="_blank" rel="noopener">R*</a>, which answers how likely we are to lose a dataset, and the Keeling Curve Foundation's Long-Term Observations inventory, which answers which measurement series must keep running, UReDI completes an ensemble. Value, risk, and continuity are three different questions, and run together they catch what any one framework alone would miss, making the combined system far more useful than the sum of its parts.</p>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+<div class="grid">
+
+  <!-- ================= MAIN COLUMN ================= -->
+  <main>
+
+    <!-- SECTION A: DATASET & CURATOR -->
+    <div class="card closed" id="cardA">
+      <div class="sec-head" onclick="toggle('cardA')">
+        <span class="tag t-meta">A</span>
+        <h2>Dataset &amp; Curator</h2>
+        <span class="meta">required</span>
+        <span class="chev">▼</span>
+      </div>
+      <div class="sec-body">
+        <p class="sec-intro">Identifies the dataset under assessment. The persistent identifier is the anchor that lets the same dataset be recognised across operators and runs.</p>
+        <div class="field-grid">
+          <div class="field full">
+            <label class="flab">Dataset name</label>
+            <input type="text" id="f_dsname" placeholder="e.g., World Ocean Database — Temperature">
+          </div>
+          <div class="field full">
+            <label class="flab">Persistent identifier (PID)</label>
+            <input type="text" id="f_pid" placeholder="DOI, ARK, or handle — e.g., 10.7289/V5C8276M">
+            <div class="hint" id="pidHint">Light type-detection (DOI / ARK / handle) will normalise this entry so one dataset reads identically for every operator.</div>
+          </div>
+          <div class="field">
+            <label class="flab">Primary curator — name</label>
+            <input type="text" id="f_curname" placeholder="Curator of record for this dataset">
+          </div>
+          <div class="field">
+            <label class="flab">Primary curator — email</label>
+            <input type="email" id="f_curemail" placeholder="curator@institution.org">
+          </div>
+          <div class="field full">
+            <label class="flab">Primary curator — ORCID <span class="opt">optional</span></label>
+            <input type="text" id="f_curorcid" placeholder="0000-0000-0000-0000">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION B: OPERATOR -->
+    <div class="card closed" id="cardB">
+      <div class="sec-head" onclick="toggle('cardB')">
+        <span class="tag t-meta">B</span>
+        <h2>Operator</h2>
+        <span class="meta">recommended</span>
+        <span class="chev">▼</span>
+      </div>
+      <div class="sec-body">
+        <div class="recommend-strip">These fields are optional, but strongly encouraged. They are what make a score comparable across operators and across repeat runs. The experience rating in particular is required to test whether different operators land in the same place on the same dataset.</div>
+        <div class="field-grid">
+          <div class="field">
+            <label class="flab">Operator — name</label>
+            <input type="text" id="f_opname" placeholder="Person running this assessment">
+          </div>
+          <div class="field">
+            <label class="flab">Operator — email</label>
+            <input type="email" id="f_opemail" placeholder="operator@institution.org">
+          </div>
+          <div class="field">
+            <label class="flab">Operator — ORCID <span class="opt">optional</span></label>
+            <input type="text" id="f_oporcid" placeholder="0000-0000-0000-0000">
+          </div>
+          <div class="field">
+            <label class="flab">Assessment date <span class="opt">auto</span></label>
+            <input type="text" id="adate" readonly>
+          </div>
+          <div class="field full">
+            <label class="flab">Operator experience self-rating &nbsp;<span class="opt">0 = none · 10 = deep domain expertise</span></label>
+            <div class="exp-row">
+              <input type="range" id="expSlider" min="0" max="10" step="1" value="7" oninput="document.getElementById('expVal').textContent=this.value+' / 10'">
+              <span class="exp-val" id="expVal">7 / 10</span>
+            </div>
+            <div class="hint">Logged with every run. Without it, cross-operator variance can't be measured later.</div>
+          </div>
+          <div class="field">
+            <label class="flab">Framework version <span class="opt">auto</span></label>
+            <input type="text" id="f_fwver" value="UReDI v3" readonly>
+          </div>
+          <div class="field">
+            <label class="flab">Tool / mock-up build <span class="opt">auto</span></label>
+            <input type="text" id="f_build" value="uredi-calculator v0.2" readonly>
+          </div>
+          <div class="field full">
+            <label class="flab">Operator notes &amp; context <span class="opt">optional</span></label>
+            <textarea id="f_opnotes" placeholder="Any context, caveats, or gut-check factors that shaped this assessment but weren't captured by the rubric."></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORKED EXAMPLES -->
+    <div class="card closed" id="cardEx">
+      <div class="sec-head" onclick="toggle('cardEx')">
+        <span class="tag t-ex">★</span>
+        <h2>Worked Examples — Calibration Reference</h2>
+        <span class="meta">6 datasets</span>
+        <span class="chev">▼</span>
+      </div>
+      <div class="sec-body">
+        <p class="sec-intro">Six datasets scored in UReDI v3 Appendix B, with the expert score for every component. Use these to calibrate your own judgement, especially on the subjective components.</p>
+        <div class="ex-controls">
+          <select id="exSelect" onchange="renderExample()">
+            <option value="">— select a worked example —</option>
+          </select>
+        </div>
+        <div id="exPanel"></div>
+      </div>
+    </div>
+
+    <!-- DIMENSION U -->
+    <div class="card closed" id="cardU">
+      <div class="sec-head" onclick="toggle('cardU')">
+        <span class="tag t-u">U</span>
+        <h2>Urgency of Loss</h2>
+        <span class="meta">1 component</span>
+        <span class="chev">▼</span>
+      </div>
+      <div class="sec-body">
+        <p class="sec-intro">How likely is near-term loss? Urgency is a single direct score and enters the Priority roll-up unchanged.</p>
+        <div id="qU"></div>
+      </div>
+    </div>
+
+    <!-- DIMENSION RD -->
+    <div class="card closed" id="cardRD">
+      <div class="sec-head" onclick="toggle('cardRD')">
+        <span class="tag t-rd">RD</span>
+        <h2>Recoverability Difficulty</h2>
+        <span class="meta">4 components</span>
+        <span class="chev">▼</span>
+      </div>
+      <div class="sec-body">
+        <p class="sec-intro">If the dataset were lost, how hard would it be to recreate? Structural uniqueness (Rs) carries two-thirds of the weight; the three cost components share the rest.</p>
+        <div id="qRD"></div>
+        <div class="formula">
+          <span class="lab">// reconstruction cost</span><br>
+          RDc = ( ETC + SC + PC ) / 3<br>
+          <span class="lab">// final recoverability difficulty</span><br>
+          RD = <b>(2/3)</b> &middot; Rs &nbsp;+&nbsp; <b>(1/3)</b> &middot; RDc<br>
+          <span class="lab">// rounded to ordinal for the triplet</span><br>
+          RD* = round( RD )
+        </div>
+      </div>
+    </div>
+
+    <!-- DIMENSION I -->
+    <div class="card closed" id="cardI">
+      <div class="sec-head" onclick="toggle('cardI')">
+        <span class="tag t-imp">I</span>
+        <h2>Importance</h2>
+        <span class="meta">10 components</span>
+        <span class="chev">▼</span>
+      </div>
+      <div class="sec-body">
+        <p class="sec-intro">How critical is the dataset to science, the public sector, and markets? Importance sums ten components (raw 10 to 50), then normalises to a 1 to 5 score.</p>
+        <div id="qI"></div>
+        <div class="formula">
+          <span class="lab">// sum of ten components</span><br>
+          I = SAS + PCS + PRS + TL + TR + SE + SR + I_int + D + Q<br>
+          <span class="lab">// normalised importance</span><br>
+          I* = round( I / 10 )
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ================= RESULTS ASIDE ================= -->
+  <aside>
+    <div class="result-card">
+      <div class="rc-head">UReDI Priority Score</div>
+      <div class="priority-box">
+        <span class="priority-num" id="pNum">—</span>
+        <span class="priority-den"> / 100</span>
+        <div><span class="tier-pill" id="tierPill" style="background:#5a6a6c">Awaiting input</span></div>
+      </div>
+      <div class="triplet-row">
+        <div class="trip d-u"><div class="tl">U</div><div class="tv" id="tU">—</div></div>
+        <div class="trip d-rd"><div class="tl">RD*</div><div class="tv" id="tRD">—</div></div>
+        <div class="trip d-imp"><div class="tl">I*</div><div class="tv" id="tI">—</div></div>
+      </div>
+      <div class="rawprod">raw product &nbsp;U &times; RD* &times; I* = <b id="rawProd">—</b> &nbsp;(of 125)</div>
+      <div class="drag-note" id="dragNote" style="display:none"></div>
+      <div class="completion">
+        <span id="compText">0 / 15 components scored</span>
+        <div class="cbar"><i id="cbarFill"></i></div>
+      </div>
+    </div>
+
+    <div class="breakdown">
+      <div class="bd-head">Score Breakdown</div>
+      <div class="bd-pad" id="bdBody">
+        <div class="bd-row dim"><span class="bn">Urgency (U)</span><span class="bv" id="bdU">—</span></div>
+        <div class="bd-row dim"><span class="bn">Recoverability (RD)</span><span class="bv" id="bdRD">—</span></div>
+        <div class="bd-row"><span class="bn">&nbsp;&nbsp;RDc = (ETC+SC+PC)/3</span><span class="bv" id="bdRDc">—</span></div>
+        <div class="bd-row"><span class="bn">&nbsp;&nbsp;RD* (rounded)</span><span class="bv" id="bdRDr">—</span></div>
+        <div class="bd-row dim"><span class="bn">Importance (I)</span><span class="bv" id="bdI">—</span></div>
+        <div class="bd-row"><span class="bn">&nbsp;&nbsp;I* = round(I/10)</span><span class="bv" id="bdIr">—</span></div>
+      </div>
+    </div>
+
+    <div class="export-card">
+      <div class="et">Export &amp; Save</div>
+      <button class="btn primary" onclick="downloadJSON()">⬇ &nbsp;Download JSON</button>
+      <button class="btn" onclick="copyJSON(this)">⧉ &nbsp;Copy to clipboard</button>
+      <button class="btn" onclick="window.print()">⎙ &nbsp;Print / Save as PDF</button>
+    </div>
+  </aside>
+
+</div>
+</div>
+
+<footer>
+  UReDI Calculator · functional build v0.2 · for deployment at sdiggs.github.io/uredi-calculator/<br>
+  Framework: UReDI v3 (Karl) &nbsp;·&nbsp; ensemble companion to <a href="https://sdiggs.github.io/rstar-calculator/" target="_blank" rel="noopener">R*</a> (Diggs) and KCF Long-Term Observations
+</footer>
+
+<script>
+/* ---------- TOGGLE ---------- */
+function toggle(id){document.getElementById(id).classList.toggle('closed');}
+
+/* ---------- DATE ---------- */
+document.getElementById('adate').value = new Date().toISOString().slice(0,10);
+
+/* ---------- COMPONENT DEFINITIONS ---------- */
+const RUBRIC = {
+  U:["Highly secure with stable long-term institutional support and redundant archives",
+     "Relatively stable, but with some risk factors",
+     "Moderate vulnerability; continuation uncertain in the medium term",
+     "High vulnerability due to unstable funding or institutional uncertainty",
+     "Imminent risk of loss due to program termination, funding loss, or infrastructure failure"],
+  Rs:["Algorithmic dataset, easily regenerated from other preserved data",
+      "Dataset reproducible from upstream data with moderate effort",
+      "Derived dataset requiring complex reconstruction from multiple upstream inputs",
+      "Observations partly duplicated elsewhere but difficult to reconstruct completely",
+      "Unique observations that cannot be recreated if lost"],
+  ETC:["Minimal expertise required","Basic technical expertise sufficient","Moderate technical expertise required",
+       "Substantial domain expertise required","Highly specialized scientific expertise required"],
+  SC:["Less than 1 TB","1 to 10 TB","10 to 100 TB","100 TB to 1 PB","1 PB or greater"],
+  PC:["Minimal processing required","Low computational demand","Moderate computational processing",
+      "High computational demand","Very high HPC processing requirements"],
+  SAS:["Rarely used in research literature","Limited academic use","Moderate scientific usage",
+       "Widely used across multiple disciplines","Foundational dataset, widely cited"],
+  PCS:["Minimal public-sector use","Occasional use in reports","Used in monitoring programs",
+       "Widely used across government programs","Core dataset in major public assessments"],
+  PRS:["Little commercial use","Limited niche applications","Moderate commercial use",
+       "Widely used across industries","Core dataset supporting major analytics markets"],
+  TL:["Less than 5 years","5 to 20 years","20 to 50 years","50 to 100 years","More than 100 years"],
+  TR:["Annual","Seasonal","Monthly","Daily","Sub-daily or continuous"],
+  SE:["Local","Regional","National","Continental","Global"],
+  SR:["Greater than 500 km","100 to 500 km","10 to 100 km","1 to 10 km","Less than 1 km, or dense observations"],
+  Iint:["Rarely integrated","Limited integration","Used in several derived products",
+        "Widely integrated","Foundational analytical dataset"],
+  D:["Few dependent products","Some derived analyses","Moderate dependency",
+     "Large number of dependent datasets","Critical dependency across climate products"],
+  Q:["Minimal univariate QC for out-of-bounds values",
+     "Basic QC: out-of-bounds plus rate-of-change checks",
+     "Standard QC: adds multivariate consistency checks",
+     "Adds temporal and spatial bias detection",
+     "Reference-quality gold standard"]
+};
+
+const COMPONENTS = [
+  {k:"U",dim:"u",name:"Urgency of Loss",
+   q:"How likely is this dataset to be degraded, interrupted, or lost in the near term due to institutional, financial, or technical factors?",
+   def:"Captures risk of loss only — not value, not recoverability.",
+   refs:[{t:"Program / funding status",ph:true}]},
+  {k:"Rs",dim:"rd",name:"Structural Uniqueness",
+   q:"If this dataset were lost, how difficult would it be to recreate the actual observations it contains?",
+   def:"The irreplaceability of the underlying observations. Carries two-thirds of the RD weight.",
+   refs:[{t:"Dataset lineage / provenance",ph:true}]},
+  {k:"ETC",dim:"rd",name:"Expertise Cost",
+   q:"How much specialized scientific or technical expertise would reconstructing this dataset require?",
+   def:"One of three reconstruction-cost components (averaged into RDc).",refs:[]},
+  {k:"SC",dim:"rd",name:"Storage Cost",
+   q:"What is the approximate total storage volume of this dataset?",
+   def:"Objective component — read from dataset documentation where possible.",refs:[]},
+  {k:"PC",dim:"rd",name:"Processing Cost",
+   q:"How computationally demanding is it to process or re-process this dataset?",
+   def:"One of three reconstruction-cost components (averaged into RDc).",refs:[]},
+  {k:"SAS",dim:"imp",name:"Scientific & Academic Usage",
+   q:"How widely is this dataset used in the research and academic literature?",
+   def:"Breadth of use in peer-reviewed science.",
+   refs:[{t:"Check citation footprint",url:"https://scholar.google.com",ph:false}]},
+  {k:"PCS",dim:"imp",name:"Public Sector Usage",
+   q:"How widely is this dataset used across the public sector?",
+   def:"Use in government monitoring, reporting, and assessments.",refs:[{t:"Agency / assessment usage",ph:true}]},
+  {k:"PRS",dim:"imp",name:"Private Sector Usage",
+   q:"How widely is this dataset used in the private sector?",
+   def:"Use in industry, analytics, insurance, and commercial applications.",refs:[]},
+  {k:"TL",dim:"imp",name:"Temporal Length",
+   q:"How long is the dataset's temporal record?",
+   def:"Objective component — total span of the record.",refs:[]},
+  {k:"TR",dim:"imp",name:"Temporal Resolution",
+   q:"What is the dataset's temporal resolution?",
+   def:"Objective component — observation frequency.",refs:[]},
+  {k:"SE",dim:"imp",name:"Spatial Extent",
+   q:"What is the dataset's spatial extent?",
+   def:"Objective component. Note: polar / basin-scale coverage sits awkwardly between Regional and Continental — a known rubric soft spot.",refs:[]},
+  {k:"SR",dim:"imp",name:"Spatial Resolution",
+   q:"What is the dataset's spatial resolution?",
+   def:"Objective component — grid spacing or observation density.",refs:[]},
+  {k:"Iint",dim:"imp",name:"Integration into Systems",
+   q:"How deeply is this dataset integrated into analytical systems — reanalyses, model-evaluation pipelines, operational monitoring platforms?",
+   def:"Whether the dataset is embedded inside analytical machinery.",
+   callout:"<strong>Integration vs Dependencies.</strong> Integration asks whether this dataset is embedded <em>inside</em> analytical systems. Downstream Dependencies (next) asks how many products are <em>built from</em> it. A dataset can be deeply integrated in a few systems yet feed few derivatives — or vice versa. Score them independently.",
+   refs:[]},
+  {k:"D",dim:"imp",name:"Downstream Dependencies",
+   q:"How many derived datasets or downstream products depend on this dataset as an upstream input?",
+   def:"The count and criticality of products built from this dataset.",
+   callout:"<strong>Dependencies vs Integration.</strong> This counts products <em>built from</em> the dataset. It is not the same as Integration (how embedded the dataset is inside analytical systems). Re-read the worked examples — GHCN scores high on both, WOD high on Integration but moderate on Dependencies.",
+   refs:[]},
+  {k:"Q",dim:"imp",name:"Data Quality",
+   q:"What level of quality control has this dataset undergone?",
+   def:"Cumulative — each level adds to the one below it.",refs:[]}
+];
+
+/* ---------- RENDER QUESTION BLOCKS ---------- */
+function renderComponent(c){
+  let html = '<div class="qblock" id="qb-'+c.k+'">';
+  html += '<div class="q-head"><span class="q-code" style="background:var(--'+c.dim+')">'+c.k.replace("Iint","I_int")+'</span>';
+  html += '<span class="q-name">'+c.name+'</span></div>';
+  html += '<div class="q-text">'+c.q+'</div>';
+  html += '<div class="q-def">'+c.def+'</div>';
+  if(c.callout) html += '<div class="callout">'+c.callout+'</div>';
+  html += '<div class="opts">';
+  RUBRIC[c.k].forEach(function(txt,i){
+    const sc=i+1;
+    html += '<label class="opt-row" onclick="selectOpt(this,\''+c.k+'\','+sc+')">';
+    html += '<input type="radio" name="r-'+c.k+'" value="'+sc+'">';
+    html += '<span class="opt-score">'+sc+'</span>';
+    html += '<span class="opt-text">'+txt+'</span></label>';
+  });
+  html += '</div>';
+  html += '<div class="q-foot">';
+  html += '<div class="reason"><label>Reasoning &amp; gut-check notes for this score</label>';
+  html += '<textarea id="why-'+c.k+'" placeholder="Why this level? Record judgement calls and any specifics the rubric did not anticipate."></textarea></div>';
+  html += '<div class="refs"><strong>References &amp; resources</strong>';
+  if(c.refs && c.refs.length){
+    c.refs.forEach(function(r){
+      if(r.ph) html += '<span class="rl ph">'+r.t+' — link pending</span>';
+      else html += '<a class="rl" href="'+r.url+'" target="_blank" rel="noopener">'+r.t+' ↗</a>';
+    });
+  } else {
+    html += '<span class="rl ph">objective rubric — no external reference needed</span>';
+  }
+  html += '</div></div></div>';
+  return html;
+}
+
+document.getElementById('qU').innerHTML  = COMPONENTS.filter(c=>c.dim==='u').map(renderComponent).join('');
+document.getElementById('qRD').innerHTML = COMPONENTS.filter(c=>c.dim==='rd').map(renderComponent).join('');
+document.getElementById('qI').innerHTML  = COMPONENTS.filter(c=>c.dim==='imp').map(renderComponent).join('');
+
+/* ---------- SCORING ---------- */
+const scores = {};
+function selectOpt(el,key,val){
+  scores[key]=val;
+  const parent=el.parentElement;
+  parent.querySelectorAll('.opt-row').forEach(r=>r.classList.remove('sel'));
+  el.classList.add('sel');
+  el.querySelector('input').checked=true;
+  recompute();
+}
+
+function tierFor(p){
+  if(p>=65) return {n:"Critical Priority",c:"var(--tier-crit)"};
+  if(p>=40) return {n:"High Priority",c:"var(--tier-high)"};
+  if(p>=20) return {n:"Moderate Priority",c:"var(--tier-mod)"};
+  return {n:"Low Priority",c:"var(--tier-low)"};
+}
+
+function recompute(){
+  const need=["U","Rs","ETC","SC","PC","SAS","PCS","PRS","TL","TR","SE","SR","Iint","D","Q"];
+  const done=need.filter(k=>scores[k]!==undefined).length;
+  document.getElementById('compText').textContent=done+' / 15 components scored';
+  document.getElementById('cbarFill').style.width=(done/15*100)+'%';
+
+  // Recoverability Difficulty
+  let bdRDc='—',bdRDr='—',bdRD='—',RDstar=null;
+  if(["Rs","ETC","SC","PC"].every(k=>scores[k]!==undefined)){
+    const RDc=(scores.ETC+scores.SC+scores.PC)/3;
+    const RD=(2/3)*scores.Rs+(1/3)*RDc;
+    RDstar=Math.round(RD);
+    bdRDc=RDc.toFixed(2); bdRD=RD.toFixed(2); bdRDr=RDstar;
+  }
+  // Importance
+  let Iraw=null,Istar=null;
+  const impKeys=["SAS","PCS","PRS","TL","TR","SE","SR","Iint","D","Q"];
+  if(impKeys.every(k=>scores[k]!==undefined)){
+    Iraw=impKeys.reduce((s,k)=>s+scores[k],0);
+    Istar=Math.round(Iraw/10);
+  }
+  // breakdown panel
+  document.getElementById('bdU').textContent  = scores.U!==undefined?scores.U:'—';
+  document.getElementById('bdRD').textContent = bdRD;
+  document.getElementById('bdRDc').textContent= bdRDc;
+  document.getElementById('bdRDr').textContent= bdRDr;
+  document.getElementById('bdI').textContent  = Iraw!==null?Iraw+'  (raw, of 50)':'—';
+  document.getElementById('bdIr').textContent = Istar!==null?Istar:'—';
+
+  // triplet
+  document.getElementById('tU').textContent  = scores.U!==undefined?scores.U:'—';
+  document.getElementById('tRD').textContent = RDstar!==null?RDstar:'—';
+  document.getElementById('tI').textContent  = Istar!==null?Istar:'—';
+
+  // Priority
+  if(scores.U!==undefined && RDstar!==null && Istar!==null){
+    const prod=scores.U*RDstar*Istar;
+    const priority=(prod/125)*100;
+    document.getElementById('pNum').textContent=priority.toFixed(0);
+    document.getElementById('rawProd').textContent=prod;
+    const t=tierFor(priority);
+    const pill=document.getElementById('tierPill');
+    pill.textContent=t.n; pill.style.background=t.c;
+    // drag note
+    const dims=[{n:"Urgency",v:scores.U},{n:"Recoverability",v:RDstar},{n:"Importance",v:Istar}];
+    dims.sort((a,b)=>a.v-b.v);
+    const dn=document.getElementById('dragNote');
+    if(dims[0].v<dims[2].v){
+      dn.style.display='block';
+      dn.innerHTML='▼ <b>'+dims[0].n+'</b> ('+dims[0].v+'/5) is the dominant drag on this score. The multiplicative roll-up means a low score on any one dimension pulls the whole Priority down — this is intended behaviour.';
+    } else { dn.style.display='none'; }
+  } else {
+    document.getElementById('pNum').textContent='—';
+    document.getElementById('rawProd').textContent='—';
+    const pill=document.getElementById('tierPill');
+    pill.textContent='Awaiting input'; pill.style.background='#5a6a6c';
+    document.getElementById('dragNote').style.display='none';
+  }
+}
+
+/* ---------- WORKED EXAMPLES ---------- */
+const EXAMPLES = {
+  ghcn:{name:"GHCN Global — Global Historical Climatology Network",
+    s:{U:3,Rs:5,ETC:3,SC:3,PC:2,SAS:5,PCS:5,PRS:4,TL:5,TR:4,SE:5,SR:4,Iint:5,D:5,Q:5},
+    trip:"(3, 4, 5)",pr:48,
+    note:"Global land-surface station temperature and precipitation. Unique historical observations that cannot be recreated once lost, hence the maximum Rs; central to global temperature analysis, hence top Importance.",
+    cite:"Peterson, T. C., and R. S. Vose. 1997. An overview of the Global Historical Climatology Network temperature database. BAMS 78: 2837–2849."},
+  gpcp:{name:"GPCP — Global Precipitation Climatology Project",
+    s:{U:3,Rs:3,ETC:4,SC:3,PC:4,SAS:5,PCS:4,PRS:3,TL:4,TR:4,SE:5,SR:3,Iint:4,D:4,Q:5},
+    trip:"(3, 3, 4)",pr:29,
+    note:"Satellite and gauge blended global precipitation. Partly reconstructable from upstream inputs, but complex merging and calibration keep recoverability difficulty moderate-to-high.",
+    cite:"Huffman, G. J., et al. 1997. The Global Precipitation Climatology Project (GPCP) combined precipitation dataset. BAMS 78: 5–20."},
+  wodt:{name:"World Ocean Database — Temperature",
+    s:{U:5,Rs:5,ETC:4,SC:4,PC:3,SAS:5,PCS:4,PRS:3,TL:5,TR:4,SE:5,SR:3,Iint:5,D:4,Q:5},
+    trip:"(5, 5, 4)",pr:80,
+    note:"Global historical ocean temperature observations. Highest urgency (reduced expert stewardship) and unique, irreplaceable observations combine to place it among the strongest preservation priorities.",
+    cite:"Boyer, T. P., et al. 2018. World Ocean Database 2018. NOAA Atlas NESDIS 87."},
+  wods:{name:"World Ocean Database — Salinity",
+    s:{U:5,Rs:5,ETC:4,SC:4,PC:3,SAS:5,PCS:4,PRS:3,TL:5,TR:4,SE:5,SR:3,Iint:5,D:4,Q:5},
+    trip:"(5, 5, 4)",pr:80,
+    note:"Global ocean salinity observations. As with temperature, historical measurements cannot be recreated; high urgency, recoverability difficulty, and importance throughout.",
+    cite:"Boyer, T. P., et al. 2018. World Ocean Database 2018. NOAA Atlas NESDIS 87."},
+  seaice:{name:"NASA Sea Ice Extent — NSIDC Sea Ice Index",
+    s:{U:2,Rs:4,ETC:3,SC:2,PC:3,SAS:5,PCS:5,PRS:4,TL:4,TR:4,SE:4,SR:4,Iint:5,D:4,Q:5},
+    trip:"(2, 4, 4)",pr:26,
+    note:"Satellite-derived polar sea-ice extent since 1979. Lower urgency (stable, multi-stakeholder program); some raw satellite data could be reprocessed, so Rs is high but not maximal.",
+    cite:"Fetterer, F., K. Knowles, W. Meier, M. Savoie, and A. Windnagel. 2017. Sea Ice Index, Version 3. NSIDC."},
+  pdsi:{name:"NOAA Palmer Drought Severity Index (PDSI)",
+    s:{U:3,Rs:2,ETC:3,SC:2,PC:3,SAS:4,PCS:4,PRS:4,TL:4,TR:3,SE:4,SR:3,Iint:4,D:4,Q:4},
+    trip:"(3, 2, 4)",pr:19,
+    note:"Derived drought index, recomputable from preserved meteorological inputs. Illustrates how UReDI separates primary observations from derived products — important but low recoverability difficulty.",
+    cite:"Palmer, W. C. 1965. Meteorological drought. U.S. Weather Bureau Research Paper No. 45."}
+};
+const exSel=document.getElementById('exSelect');
+Object.keys(EXAMPLES).forEach(k=>{
+  const o=document.createElement('option');o.value=k;o.textContent=EXAMPLES[k].name;exSel.appendChild(o);
+});
+const ORDER=["U","Rs","ETC","SC","PC","SAS","PCS","PRS","TL","TR","SE","SR","Iint","D","Q"];
+function renderExample(){
+  const k=exSel.value, p=document.getElementById('exPanel');
+  if(!k){p.innerHTML='';return;}
+  const e=EXAMPLES[k];
+  let h='<div class="ex-meta">'+e.note+'</div>';
+  h+='<table class="ex-table"><tr><th>Component</th><th>Score</th><th>Component</th><th>Score</th></tr>';
+  for(let i=0;i<ORDER.length;i+=2){
+    const a=ORDER[i], b=ORDER[i+1];
+    h+='<tr><td>'+a.replace("Iint","I_int")+'</td><td class="s">'+e.s[a]+'</td>';
+    if(b) h+='<td>'+b.replace("Iint","I_int")+'</td><td class="s">'+e.s[b]+'</td>';
+    else h+='<td></td><td></td>';
+    h+='</tr>';
+  }
+  h+='</table>';
+  h+='<span class="ex-triplet">UReDI triplet (U, RD*, I*) = '+e.trip+' &nbsp;|&nbsp; Priority = '+e.pr+' / 100</span>';
+  h+='<div class="ex-cite">Reference: '+e.cite+'</div>';
+  p.innerHTML=h;
+}
+
+/* ---------- PID TYPE DETECTION ---------- */
+function detectPID(v){
+  v=(v||'').trim();
+  if(!v) return null;
+  const low=v.toLowerCase();
+  if(/^(https?:\/\/)?(dx\.)?doi\.org\//.test(low)||/^doi:/.test(low)||/^10\.\d{4,}\/\S+/.test(low)) return 'DOI';
+  if(/ark:\/?\//.test(low)) return 'ARK';
+  if(/^(https?:\/\/)?hdl\.handle\.net\//.test(low)||/^hdl:/.test(low)) return 'Handle';
+  if(/^https?:\/\//.test(low)) return 'URL';
+  return 'Unrecognised';
+}
+document.getElementById('f_pid').addEventListener('input',function(){
+  const t=detectPID(this.value), h=document.getElementById('pidHint');
+  if(t===null){
+    h.textContent='Light type-detection (DOI / ARK / handle) will normalise this entry so one dataset reads identically for every operator.';
+    h.style.color='';
+  } else if(t==='Unrecognised'){
+    h.textContent='Identifier type not recognised — it will be stored as free text.';
+    h.style.color='var(--u)';
+  } else {
+    h.textContent='Detected identifier type: '+t+'.';
+    h.style.color='var(--primary)';
+  }
+});
+
+/* ---------- METRICS (pure compute) ---------- */
+function computeMetrics(){
+  const m={complete:false};
+  const need=["U","Rs","ETC","SC","PC","SAS","PCS","PRS","TL","TR","SE","SR","Iint","D","Q"];
+  m.scored=need.filter(k=>scores[k]!==undefined).length;
+  if(["Rs","ETC","SC","PC"].every(k=>scores[k]!==undefined)){
+    m.RDc=(scores.ETC+scores.SC+scores.PC)/3;
+    m.RD=(2/3)*scores.Rs+(1/3)*m.RDc;
+    m.RDstar=Math.round(m.RD);
+  }
+  const impKeys=["SAS","PCS","PRS","TL","TR","SE","SR","Iint","D","Q"];
+  if(impKeys.every(k=>scores[k]!==undefined)){
+    m.Iraw=impKeys.reduce((s,k)=>s+scores[k],0);
+    m.Istar=Math.round(m.Iraw/10);
+  }
+  if(scores.U!==undefined&&m.RDstar!==undefined&&m.Istar!==undefined){
+    m.U=scores.U;
+    m.rawProduct=m.U*m.RDstar*m.Istar;
+    m.priority=Math.round((m.rawProduct/125)*100);
+    m.tier=tierFor(m.priority).n;
+    m.complete=true;
+  }
+  return m;
+}
+
+/* ---------- ASSESSMENT OBJECT ---------- */
+function gv(id){const e=document.getElementById(id);return e?(e.value||'').trim():'';}
+function buildAssessment(){
+  const m=computeMetrics();
+  const comp={};
+  COMPONENTS.forEach(function(c){
+    const s=scores[c.k];
+    comp[c.k.replace("Iint","I_int")]={
+      name:c.name,
+      dimension:({u:"Urgency",rd:"Recoverability Difficulty",imp:"Importance"})[c.dim],
+      score:s!==undefined?s:null,
+      rubric_level:s!==undefined?RUBRIC[c.k][s-1]:null,
+      reasoning:gv('why-'+c.k)
+    };
+  });
+  return {
+    framework:"UReDI v3",
+    tool_build:gv('f_build'),
+    exported_at:new Date().toISOString(),
+    dataset:{
+      name:gv('f_dsname'),
+      pid:gv('f_pid'),
+      pid_type:detectPID(gv('f_pid')),
+      curator_name:gv('f_curname'),
+      curator_email:gv('f_curemail'),
+      curator_orcid:gv('f_curorcid')
+    },
+    operator:{
+      name:gv('f_opname'),
+      email:gv('f_opemail'),
+      orcid:gv('f_oporcid'),
+      experience_self_rating:Number(document.getElementById('expSlider').value),
+      assessment_date:gv('adate'),
+      notes:gv('f_opnotes')
+    },
+    components:comp,
+    results:{
+      complete:m.complete,
+      components_scored:m.scored+"/15",
+      U:m.U!==undefined?m.U:null,
+      RDc:m.RDc!==undefined?Number(m.RDc.toFixed(3)):null,
+      RD:m.RD!==undefined?Number(m.RD.toFixed(3)):null,
+      RD_star:m.RDstar!==undefined?m.RDstar:null,
+      I_raw:m.Iraw!==undefined?m.Iraw:null,
+      I_star:m.Istar!==undefined?m.Istar:null,
+      uredi_triplet:m.complete?[m.U,m.RDstar,m.Istar]:null,
+      raw_product:m.rawProduct!==undefined?m.rawProduct:null,
+      priority_score:m.priority!==undefined?m.priority:null,
+      priority_tier:m.tier||null,
+      tier_bands:"Critical 65-100 | High 40-64 | Moderate 20-39 | Low 0-19 (provisional)"
+    }
+  };
+}
+
+function exportFilename(){
+  let n=gv('f_dsname').replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'').toLowerCase();
+  return 'uredi_'+(n||'assessment')+'_'+new Date().toISOString().slice(0,10);
+}
+
+function downloadJSON(){
+  const data=JSON.stringify(buildAssessment(),null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=exportFilename()+'.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){URL.revokeObjectURL(url);},500);
+}
+
+function copyJSON(btn){
+  const data=JSON.stringify(buildAssessment(),null,2);
+  const flash=function(ok){
+    const orig=btn.innerHTML;
+    btn.innerHTML=ok?'✓ &nbsp;Copied to clipboard':'⚠ &nbsp;Copy failed';
+    setTimeout(function(){btn.innerHTML=orig;},1700);
+  };
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(data).then(function(){flash(true);},function(){fallbackCopy(data,flash);});
+  } else { fallbackCopy(data,flash); }
+}
+function fallbackCopy(text,flash){
+  const ta=document.createElement('textarea');
+  ta.value=text; ta.style.position='fixed'; ta.style.top='-9999px';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  let ok=false;
+  try{ ok=document.execCommand('copy'); }catch(e){ ok=false; }
+  ta.remove(); flash(ok);
+}
+</script>
+</body>
+</html>
